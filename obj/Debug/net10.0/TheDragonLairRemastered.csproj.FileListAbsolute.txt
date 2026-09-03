@@ -1,0 +1,15 @@
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\bin\Debug\net10.0\TheDragonLairRemastered.exe
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\bin\Debug\net10.0\TheDragonLairRemastered.deps.json
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\bin\Debug\net10.0\TheDragonLairRemastered.runtimeconfig.json
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\bin\Debug\net10.0\TheDragonLairRemastered.dll
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\bin\Debug\net10.0\TheDragonLairRemastered.pdb
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.GeneratedMSBuildEditorConfig.editorconfig
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.AssemblyInfoInputs.cache
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.AssemblyInfo.cs
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.csproj.CoreCompileInputs.cache
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.sourcelink.json
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.dll
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\refint\TheDragonLairRemastered.dll
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.pdb
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\TheDragonLairRemastered.genruntimeconfig.cache
+D:\Codebase\CommandLineGames\TheDragonLairRemastered\obj\Debug\net10.0\ref\TheDragonLairRemastered.dll
