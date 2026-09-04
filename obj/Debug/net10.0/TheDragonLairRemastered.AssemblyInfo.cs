@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TheDragonLairRemastered")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8782b692af444e73eda693d2c2fc73de8f8ebc3f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+21d2b4f6ed031e7b5771ba762475f88db40d527f")]
 [assembly: System.Reflection.AssemblyProductAttribute("TheDragonLairRemastered")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TheDragonLairRemastered")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
