@@ -5,7 +5,7 @@ namespace TheDragonLairRemastered
     class Master
     {
         static bool bEnableSingleKeyPress = true;
-        static string[] sDungeonList = new string[]{""};
+        static string[] sDungeonList = new string[]{"","","",""};
         static int difficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard
         static void Main(string[] args)
         {
@@ -131,6 +131,7 @@ namespace TheDragonLairRemastered
                 Print("Loading previous game data....");
             }
             else
+            {
                 Print("Choose game difficulty:\n1) Coward (Easy)\n2) Stalwart (Normal)\n3) Honor (Hard)");
                 switch (readUserNum())
                 {
@@ -147,7 +148,6 @@ namespace TheDragonLairRemastered
                     CreateGame(bLoadGame, bDebugMode);
                     break;
                 }
-            {
                 CreateCharacter();
                 GenerateDungeons(10);
                 Print("You have advanced to the final dungeon!");
@@ -177,32 +177,51 @@ namespace TheDragonLairRemastered
             int iCount = iDunCount;
             if (iCount > 0)
             {  
-                Print("Generating New Dungeon");
+                Print("Generating " + iDunCount + " Dungeon");
                 // Create a list of dungeons
-                sDungeonList = new string[] { "The Forgotten Crypt", "The Cursed Forest", "The Abandoned Mines" };
+                for(int j = 0; j <= GetRandom(1,4); j++)
+                {   
+                    sDungeonList[j] = "Dungeon #" + (j+1) + "!";
+                }
+                
                 EnterDungeon(ChooseDungeon());
                 GenerateDungeons(iCount - 1);
             }
         }
         public static string ChooseDungeon() // Dungeon Selection Menu
         {
-            Print("Choose a dungeon to enter:\n1) " + sDungeonList[0] + "\n2) " + sDungeonList[1] + "\n3) " + sDungeonList[2]);
+            Print("Choose a dungeon to enter:");
+            for (int i = 0; i < sDungeonList.Length; i++)
+            {
+                Print((i+1) + ") " + sDungeonList[i]);
+            }
             switch (readUserNum())
             {
-                case 1: Print("You picked The Forgotten Crypt!", ConsoleColor.Green);
+                case 1: 
+                    if (sDungeonList[0] != "")
+                        Print("You picked " + sDungeonList[0] + "!", ConsoleColor.Green);
                 return sDungeonList[0];
-                case 2: Print("You picked The Cursed Forest!", ConsoleColor.Green);
+                case 2: 
+                    if (sDungeonList[1] != "")
+                        Print("You picked " + sDungeonList[1] + "!", ConsoleColor.Green);
                 return sDungeonList[1];
-                case 3: Print("You picked The Abandoned Mines!", ConsoleColor.Green);
+                case 3: 
+                    if (sDungeonList[2] != "")
+                        Print("You picked " + sDungeonList[2] + "!", ConsoleColor.Green);
                 return sDungeonList[2];
-                default: Print("Invalid Response", ConsoleColor.Red);
+                case 4: 
+                    if (sDungeonList[3] != "")
+                        Print("You picked " + sDungeonList[3] + "!", ConsoleColor.Green);
+                return sDungeonList[3];
+                default: 
+                    Print("Invalid Response", ConsoleColor.Red);
                 return ChooseDungeon();
             }
         }
         public static void EnterDungeon(string sDungeonName) // Dungeon Gameplay Loop
         {
             Print("Entering " + sDungeonName + "...");
-            sDungeonList = new string[]{""}; // Clear the dungeon list after entering a dungeon
+            sDungeonList = new string[]{"","","",""}; // Clear the dungeon list after entering a dungeon
             Print("You have cleared the Dungeon!");
         }
         public static void Victory() // Victory Screen

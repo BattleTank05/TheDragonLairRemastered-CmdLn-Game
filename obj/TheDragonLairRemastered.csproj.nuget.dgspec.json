@@ -1,25 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Codebase\\CmdLine\\TheDragonLairRemastered\\TheDragonLairRemastered-CmdLn-Game\\TheDragonLairRemastered.csproj": {}
+    "D:\\Codebase\\CommandLineGames\\TheDragonLairRemastered\\TheDragonLairRemastered.csproj": {}
   },
   "projects": {
-    "C:\\Codebase\\CmdLine\\TheDragonLairRemastered\\TheDragonLairRemastered-CmdLn-Game\\TheDragonLairRemastered.csproj": {
+    "D:\\Codebase\\CommandLineGames\\TheDragonLairRemastered\\TheDragonLairRemastered.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Codebase\\CmdLine\\TheDragonLairRemastered\\TheDragonLairRemastered-CmdLn-Game\\TheDragonLairRemastered.csproj",
+        "projectUniqueName": "D:\\Codebase\\CommandLineGames\\TheDragonLairRemastered\\TheDragonLairRemastered.csproj",
         "projectName": "TheDragonLairRemastered",
-        "projectPath": "C:\\Codebase\\CmdLine\\TheDragonLairRemastered\\TheDragonLairRemastered-CmdLn-Game\\TheDragonLairRemastered.csproj",
+        "projectPath": "D:\\Codebase\\CommandLineGames\\TheDragonLairRemastered\\TheDragonLairRemastered.csproj",
         "packagesPath": "C:\\Users\\joshj\\.nuget\\packages\\",
-        "outputPath": "C:\\Codebase\\CmdLine\\TheDragonLairRemastered\\TheDragonLairRemastered-CmdLn-Game\\obj\\",
+        "outputPath": "D:\\Codebase\\CommandLineGames\\TheDragonLairRemastered\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\joshj\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\joshj\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
