@@ -5,7 +5,7 @@ namespace TheDragonLairRemastered
     class Master
     {
         static bool bEnableSingleKeyPress = true;
-        static string[] sDungeonList = new string[]{"","","",""};
+        static Dungeon[] dDungeonList = new Dungeon[4];
         static int difficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard
         static void Main(string[] args)
         {
@@ -189,9 +189,9 @@ namespace TheDragonLairRemastered
                 GenerateDungeons(10); // Generate Dungeons will create a set of 2-4 dungeons and prompt the player to choose one.
                                       // After choosing, the selected dungeon is passed to the Enter Dungeon method, which loops through rooms until the dungeon is empty.
                                       // Once the dungeon is completed, Generate Dungeons will recursively loop in this manner until the passed int value is depleted.
-                                      // Default value is 10
-                Print("You have advanced to the final dungeon!"); // After completed the 10 dungeons, the player moves on to the final dungeon
-                EnterDungeon("The Dragon's Lair"); // As there is only one variation of this dungeon, Generate Dungeons can be skipped.
+                                      // Default value is 10, will be affected by the difficulty variable
+                Print("You have advanced to the final dungeon!"); // After completing the 10 dungeons, the player moves on to the final dungeon
+                // EnterDungeon("The Dragon's Lair"); // As there is only one variation of this dungeon, Generate Dungeons can be skipped.
                 Victory(); // Runs victory sequence and closes the game.
             }
         }
@@ -223,49 +223,61 @@ namespace TheDragonLairRemastered
                 // Create a fresh list of dungeons
                 for(int j = 0; j <= GetRandom(1,4); j++)
                 {   
-                    sDungeonList[j] = "Dungeon #" + (j+1) + "!";
+                    dDungeonList[j] = new Dungeon("Dungeon #" + (j+1) + "!", generateRooms());
                 }
                 // Runs a choice block to determine which of the above dungeons to enter, then passes the result to the Enter Dungeon loop
                 EnterDungeon(ChooseDungeon());
                 GenerateDungeons(iCount - 1); // Recursive loop.
             }
         }
-        public static string ChooseDungeon() // Dungeon Selection Menu
+        public static string[] generateRooms()
+        {
+            return new string[] {"Room1","Room2","Room3","Room4","Room5"};
+        }
+        public static Dungeon ChooseDungeon() // Dungeon Selection Menu
         {
             Print("Choose a dungeon to enter:");
-            for (int i = 0; i < sDungeonList.Length; i++)
+            for (int i = 0; i < dDungeonList.Length; i++)
             { // Prints the list of dungeons and their descriptions
-                if (sDungeonList[i] != "")
-                    Print((i+1) + ") " + sDungeonList[i]);
+                if (dDungeonList[i].getName() != "")
+                    Print((i+1) + ") " + dDungeonList[i].getName());
             }
             switch (readUserNum())
             { // Simple choice block
                 case 1: 
-                    if (sDungeonList[0] != "")
-                        Print("You picked " + sDungeonList[0] + "!", ConsoleColor.Green);
-                return sDungeonList[0];
+                    if (dDungeonList[0].getName() != "")
+                        Print("You picked " + dDungeonList[0].getName() + "!", ConsoleColor.Green);
+                return dDungeonList[0];
                 case 2: 
-                    if (sDungeonList[1] != "")
-                        Print("You picked " + sDungeonList[1] + "!", ConsoleColor.Green);
-                return sDungeonList[1];
+                    if (dDungeonList[1].getName() != "")
+                        Print("You picked " + dDungeonList[1].getName() + "!", ConsoleColor.Green);
+                return dDungeonList[1];
                 case 3: 
-                    if (sDungeonList[2] != "")
-                        Print("You picked " + sDungeonList[2] + "!", ConsoleColor.Green);
-                return sDungeonList[2];
+                    if (dDungeonList[2].getName() != "")
+                        Print("You picked " + dDungeonList[2].getName() + "!", ConsoleColor.Green);
+                return dDungeonList[2];
                 case 4: 
-                    if (sDungeonList[3] != "")
-                        Print("You picked " + sDungeonList[3] + "!", ConsoleColor.Green);
-                return sDungeonList[3];
+                    if (dDungeonList[3].getName() != "")
+                        Print("You picked " + dDungeonList[3].getName() + "!", ConsoleColor.Green);
+                return dDungeonList[3];
                 default: 
                     Print("Invalid Response", ConsoleColor.Red);
                 return ChooseDungeon(); // repeat until successful
             }
         }
-        public static void EnterDungeon(string sDungeonName) // Dungeon Gameplay Loop
+        public static void EnterDungeon(Dungeon dungeon) // Dungeon Gameplay Loop
         {
-            Print("Entering " + sDungeonName + "..."); // loop init
-            sDungeonList = new string[]{"","","",""}; // Clear the dungeon list after entering a dungeon
+            Print("Entering " + dungeon.getName() + "..."); // loop init
+            // sDungeonList = new string[]{"","","",""}; // Clear the dungeon list after entering a dungeon
+            foreach(string Room in dungeon.getRooms())
+            {
+                EnterRoom(Room);   
+            }
             Print("You have cleared the Dungeon!"); // End of loop
+        }
+        public static void EnterRoom(string roomName)
+        {
+            Print("Entering " + roomName + "...");
         }
         public static void Victory() // Victory Screen
         {
