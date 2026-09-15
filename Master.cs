@@ -5,7 +5,7 @@ namespace TheDragonLairRemastered
     class Master
     {
         static bool bEnableSingleKeyPress = true; // Toggles whether user input is read as single key presses or full lines. Default is true.
-        static List<Dungeon> dDungeonList = new List<Dungeon>();
+        static List<Dungeon> dDungeonList = new List<Dungeon>(); // Master Dungeon list, used across multiple gameplay methods
         static int difficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard | Affects the RNG during dungeon creation.
         static void Main(string[] args)
         {
