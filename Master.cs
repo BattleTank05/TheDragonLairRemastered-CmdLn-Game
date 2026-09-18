@@ -9,8 +9,11 @@ namespace TheDragonLairRemastered
         static int difficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard | Affects the RNG during dungeon creation.
         static void Main(string[] args)
         {
-            // Load game settings
-            LoadSettings();
+            // Attempts to load game settings
+            if(!LoadSettings()){ // If the load fails
+                Print("ERROR - LoadSettings() has failed...", ConsoleColor.Red);
+                Exit(1);
+            }
 
             // Launch menu
             Print("Hello, Welcome to the Dragon Lair Remastered!\n1) Continue\n2) New Game\n3) Settings\n4) Quit Game", true);
@@ -141,19 +144,40 @@ namespace TheDragonLairRemastered
             }
             changeSettings(); // Loops until user exits settings
         }
-        static void LoadSettings()
+        static bool LoadSettings()
         {
-            // Reads full contents of the Prefs.ini
-            string bEnableSingleKeyPressSettings = File.ReadAllText("TheDragonLairRemasteredPrefs.ini");
-            if (bEnableSingleKeyPressSettings.Contains("bEnableSingleKeyPress"))
-            { // Checks for specific entry
-                if (bEnableSingleKeyPressSettings.Contains("True"))
-                { // If the entry exists, checks status and alters accordingly
-                    bEnableSingleKeyPress = true;
+            // Reads from path: TheDragonLairRemastered\bin\Debug\net10.0\[file]
+            string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
+            string fullPath = Path.Combine(baseFolder, "TheDragonLairRemasteredPrefs.ini");
+            
+            if (File.Exists(fullPath)){
+                // Reads full contents of the Prefs.ini
+                string bEnableSingleKeyPressSettings = File.ReadAllText(fullPath);    
+            
+                if (bEnableSingleKeyPressSettings.Contains("bEnableSingleKeyPress"))
+                { // Checks for specific entry
+                    if (bEnableSingleKeyPressSettings.Contains("True"))
+                    { // If the entry exists, checks status and alters accordingly
+                        bEnableSingleKeyPress = true;
+                    }
+                    else
+                    {
+                        bEnableSingleKeyPress = false;
+                    }
                 }
-                else
+                return true; // Load finished successfully, return positive
+            }
+            else
+            {
+                File.WriteAllText(fullPath, ""); // Writes to path: TheDragonLairRemastered\bin\Debug\net10.0\[file]
+                
+                // Restart load after creating new file
+                if (LoadSettings()){
+                    return true;
+                }
+                else // If the load fails again, return negative
                 {
-                    bEnableSingleKeyPress = false;
+                    return false;
                 }
             }
         }
@@ -161,8 +185,13 @@ namespace TheDragonLairRemastered
         {
             // Compile each setting into a string
             string bEnableSingleKeyPressSettings = "bEnableSingleKeyPress=" + bEnableSingleKeyPress + "\n";
-            // Sends the string to the Prefs.ini file. Will create a new file of none exists
-            File.WriteAllText("TheDragonLairRemasteredPrefs.ini", bEnableSingleKeyPressSettings);
+
+            // Writes to path: TheDragonLairRemastered\bin\Debug\net10.0\[file]
+            string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
+            string fullPath = Path.Combine(baseFolder, "TheDragonLairRemasteredPrefs.ini");
+    
+            // Sends the string to the Prefs.ini file. Will create a new file if none exists
+            File.WriteAllText(fullPath, bEnableSingleKeyPressSettings);
         }
 #endregion
         
