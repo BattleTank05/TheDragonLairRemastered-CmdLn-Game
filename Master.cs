@@ -4,35 +4,47 @@ namespace TheDragonLairRemastered
 {
     class Master
     {
+        static bool bIsDebugMode = false; // Switch that toggles printing debug logs to the console
+        
+        // Global settings variables
         static bool bEnableSingleKeyPress = true; // Toggles whether user input is read as single key presses or full lines. Default is true.
-        static List<Dungeon> dDungeonList = new List<Dungeon>(); // Master Dungeon list, used across multiple gameplay methods
+        
+        // Game settings variables
         static int difficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard | Affects the RNG during dungeon creation.
+        static string gameLoopState = ""; /* Valid gamestates listed below:
+        "" = no game state
+        "Menu" = player is at main menu
+        "ChooseDungeon" = player is choosing dungeon
+        "ChooseRoom" = player is choosing a room in a dungeon
+        */
+        static List<Dungeon> dDungeonList = new List<Dungeon>(); // Master Dungeon list, used across multiple gameplay methods
         static void Main(string[] args)
         {
-            // Attempts to load game settings
-            if(!LoadSettings()){ // If the load fails
-                Print("ERROR - LoadSettings() has failed...", ConsoleColor.Red);
-                Exit(1);
-            }
+            // Loads game settings
+            LoadSettings();
+
+            gameLoopState = "Menu"; // set game state
 
             // Launch menu
-            Print("Hello, Welcome to the Dragon Lair Remastered!\n1) Continue\n2) New Game\n3) Settings\n4) Quit Game", true);
+            Print("Hello, Welcome to the Dragon Lair Remastered!\n1) Continue\n2) New Game\n3) Settings\n4) Quit Game", ConsoleColor.White, true);
+            DebugPrint("Debug Mode enabled.", ConsoleColor.Gray, false);
             switch (readUserNum())
             {
+                case 0:
+                bIsDebugMode = !bIsDebugMode;
+                Main(args);
+                break;
                 case 1: Print("You picked Continue!", ConsoleColor.Cyan);
-                CreateGame(true, false); // Creates a new game instance in Load mode
+                CreateGame(true); // Creates a new game instance in Load mode
                 break;
                 case 2: Print("You picked New Game!", ConsoleColor.Green);
-                CreateGame(false, false); // Creates a default new game
+                CreateGame(false); // Creates a default new game
                 break;
                 case 3:
                 changeSettings(); Main(args); // Launches the settings menu, then restarts main menu
                 break;
                 case 4: Print("Exiting Game!", ConsoleColor.Gray);
                 Exit(0); // Force exits program
-                break;
-                case 5:
-                CreateGame(false, true); // Hidden menu option | Will have debug features for quick unit tests
                 break;
                 default: Print("Invalid Response", ConsoleColor.Red); // Unrecognized input defaults to restart.
                 Main(args);
@@ -54,13 +66,18 @@ namespace TheDragonLairRemastered
             Print(sMsg);
             Console.ForegroundColor = ConsoleColor.White;
         }
-        public static void Print(string sMsg, bool bClearConsole) // Clears the Console before printing given message to the terminal
+        public static void Print(string sMsg, ConsoleColor cColor, bool bClearConsole) // Clears the Console before printing given message to the terminal
         {
             if (bClearConsole)
             {
                 Console.Clear();
             }
-            Console.WriteLine("\n" + sMsg);
+            Print("\n" + sMsg, cColor);
+        }
+        public static void DebugPrint(string sMsg, ConsoleColor cColor, bool bClearConsole)
+        {
+            if (bIsDebugMode)
+                Print(sMsg, cColor, bClearConsole);
         }
         public static void Stall()
         {
@@ -125,7 +142,7 @@ namespace TheDragonLairRemastered
 #region Save Load Methods
         public static void changeSettings() // Allows user to tweak various gameplay settings
         {
-            Print("Welcome to the Settings Menu!\nPress the number of the setting you wish to alter to change it\nPress 0 to return to the main menu", true);
+            Print("Welcome to the Settings Menu!\nPress the number of the setting you wish to alter to change it\nPress 0 to return to the main menu", ConsoleColor.White, true);
             if (bEnableSingleKeyPress)
             { // Checks the active status of the option before printing it
                 Print("1) Enable Single Key Press (Terminal reads keypresses without requiring the user to press 'Enter') - Set to: true");
@@ -144,74 +161,76 @@ namespace TheDragonLairRemastered
             }
             changeSettings(); // Loops until user exits settings
         }
-        static bool LoadSettings()
+        static void LoadSettings()
         {
-            // Reads from path: TheDragonLairRemastered\bin\Debug\net10.0\[file]
-            string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
-            string fullPath = Path.Combine(baseFolder, "TheDragonLairRemasteredPrefs.ini");
-            
-            if (File.Exists(fullPath)){
-                // Reads full contents of the Prefs.ini
-                string bEnableSingleKeyPressSettings = File.ReadAllText(fullPath);    
-            
-                if (bEnableSingleKeyPressSettings.Contains("bEnableSingleKeyPress"))
-                { // Checks for specific entry
-                    if (bEnableSingleKeyPressSettings.Contains("True"))
-                    { // If the entry exists, checks status and alters accordingly
-                        bEnableSingleKeyPress = true;
-                    }
-                    else
-                    {
-                        bEnableSingleKeyPress = false;
-                    }
-                }
-                return true; // Load finished successfully, return positive
+            SettingsData? load = SaveSystem.LoadSettings();
+            if (load != null)
+            {
+                bEnableSingleKeyPress = load.bEnableSingleKeyPress;
+
+                DebugPrint("Load Settings operation successful", ConsoleColor.Gray, false);
             }
             else
             {
-                File.WriteAllText(fullPath, ""); // Writes to path: TheDragonLairRemastered\bin\Debug\net10.0\[file]
-                
-                // Restart load after creating new file
-                if (LoadSettings()){
-                    return true;
-                }
-                else // If the load fails again, return negative
-                {
-                    return false;
-                }
+                DebugPrint("Load Settings operation returned null", ConsoleColor.Gray, false);
             }
         }
         static void SaveSettings()
         {
-            // Compile each setting into a string
-            string bEnableSingleKeyPressSettings = "bEnableSingleKeyPress=" + bEnableSingleKeyPress + "\n";
-
-            // Writes to path: TheDragonLairRemastered\bin\Debug\net10.0\[file]
-            string baseFolder = AppDomain.CurrentDomain.BaseDirectory;
-            string fullPath = Path.Combine(baseFolder, "TheDragonLairRemasteredPrefs.ini");
-    
-            // Sends the string to the Prefs.ini file. Will create a new file if none exists
-            File.WriteAllText(fullPath, bEnableSingleKeyPressSettings);
+            SaveSystem.SaveSettings(new SettingsData(bEnableSingleKeyPress));
+            DebugPrint("Settings Saved", ConsoleColor.Gray, false);
         }
+
+        static void LoadGame()
+        {
+            GameData? load = SaveSystem.LoadGame();
+            if (load != null)
+            {
+                difficulty = load.getDifficulty();
+                gameLoopState = load.getGameLoopState();
+                dDungeonList = load.getDungeons();
+
+                DebugPrint("Load game operation successful", ConsoleColor.Gray, false);
+            }
+            else
+            {
+                DebugPrint("Load game operation returned null", ConsoleColor.Gray, false);
+            }
+        }
+
+        public static void SaveGame()
+        {
+            SaveSystem.SaveGame(new GameData(gameLoopState, difficulty, dDungeonList));
+            DebugPrint("Game Saved", ConsoleColor.Gray, false);
+        }
+
 #endregion
         
         /*
         <<<--- GAMEPLAY METHODS --->>>
         */
 #region Gameplay Methods
-        public static void CreateGame(bool bLoadGame, bool bDebugMode) // Creates a new game
+        public static void CreateGame(bool bLoadGame) // Creates a new game
         {
-            if (bDebugMode) // Launches debug mode
+            if (bLoadGame) // Launches loading sequence
             {
-                Print("Entering Debug Mode!");
-            }
-            else if (bLoadGame) // Launches loading sequence
-            {
-                Print("Loading previous game data....");
+                DebugPrint("Loading previous game data...", ConsoleColor.Gray, false);
+
+                LoadGame();
+
+                switch (gameLoopState)
+                {
+                    case "ChooseDungeon":
+                    EnterDungeon(ChooseDungeon());
+                    break;
+                    default:
+                    DebugPrint("Invalid game state", ConsoleColor.Gray, false);
+                    break;
+                }
             }
             else
             { // Standard new game
-                Print("Choose game difficulty:\n1) Coward (Easy)\n2) Stalwart (Normal)\n3) Honor (Hard)", true);
+                Print("Choose game difficulty:\n1) Coward (Easy)\n2) Stalwart (Normal)\n3) Honor (Hard)", ConsoleColor.White, true);
                 switch (readUserNum())
                 { // User can choose game difficulty. Most settings will be hidden until unlocked. Difficulty affects Dungeon RNG
                     case 1: Print("You picked Coward!", ConsoleColor.Green);
@@ -224,7 +243,7 @@ namespace TheDragonLairRemastered
                     difficulty = 3;
                     break;
                     default: Print("Invalid Response", ConsoleColor.Red);
-                    CreateGame(bLoadGame, bDebugMode); // Loops on fail
+                    CreateGame(bLoadGame); // Loops on fail
                     break;
                 }
 
@@ -242,7 +261,7 @@ namespace TheDragonLairRemastered
         
         public static void CreateCharacter() // Character creation menu
         {
-            Print("Welcome to the Character Creation menu!\nPick a starting class:\n1) Warrior\n2) Mage\n3) Rogue", true);
+            Print("Welcome to the Character Creation menu!\nPick a starting class:\n1) Warrior\n2) Mage\n3) Rogue", ConsoleColor.White, true);
             // Each of the following options will instantiate a new player.
             // The given class value determines the stats, gear, and abilities the new character will have.
             switch (readUserNum())
@@ -263,12 +282,14 @@ namespace TheDragonLairRemastered
             int iCount = iDunCount; // Updates count value
             if (iCount > 0) // Checks if count is still valid
             {  
-                Print("Generating " + iDunCount + " Dungeon");
+                DebugPrint("Generating " + iDunCount + " Dungeon", ConsoleColor.Gray, false);
                 // Create a fresh list of dungeons
                 for(int j = 0; j <= GetRandom(1,4); j++)
                 {   
-                    dDungeonList.Add(new Dungeon("Dungeon #" + (j+1) + "!", generateRooms()));
+                    dDungeonList.Add(new Dungeon("Dungeon #" + (j+1), generateRooms()));
                 }
+                
+                
                 // Runs a choice block to determine which of the above dungeons to enter, then passes the result to the Enter Dungeon loop
                 EnterDungeon(ChooseDungeon());
                 GenerateDungeons(iCount--); // Recursive loop.
@@ -280,6 +301,10 @@ namespace TheDragonLairRemastered
         }
         public static Dungeon ChooseDungeon() // Dungeon Selection Menu
         {
+            gameLoopState = "ChooseDungeon";
+            DebugPrint("Saving Game...", ConsoleColor.Gray, false);
+            SaveGame();
+
             Print("Choose a dungeon to enter:");
             for (int i = 0; i < dDungeonList.Count(); i++)
             { // Prints the list of dungeons and their descriptions
@@ -334,6 +359,7 @@ namespace TheDragonLairRemastered
         }
         public static void EnterDungeon(Dungeon dungeon) // Dungeon Gameplay Loop
         {
+            // gameLoopState = "ChooseRoom";
             Print("Entering " + dungeon.getName() + "..."); // loop init
             dDungeonList.Clear(); // Clear the dungeon list after entering a dungeon
             Stall(); // Stalls the program until the user presses a key
