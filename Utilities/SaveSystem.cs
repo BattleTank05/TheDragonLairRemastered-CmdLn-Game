@@ -25,8 +25,10 @@ namespace TheDragonLairRemastered
             string path = GetSavePath();
             if (!File.Exists(path)) return null;
 
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
             string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<GameData>(json);
+            return JsonSerializer.Deserialize<GameData>(json, options);
         }
         public static void SaveSettings(SettingsData data)
         {

@@ -1,4 +1,4 @@
-﻿using System.Text.Json; // Used for JSON serialization and deserialization during Saving/Loading of game data
+﻿using System.Diagnostics;
 
 namespace TheDragonLairRemastered
 {
@@ -10,20 +10,21 @@ namespace TheDragonLairRemastered
         static bool bEnableSingleKeyPress = true; // Toggles whether user input is read as single key presses or full lines. Default is true.
         
         // Game settings variables
-        static int difficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard | Affects the RNG during dungeon creation.
-        static string gameLoopState = ""; /* Valid gamestates listed below:
+        static int iDifficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard | Affects the RNG during dungeon creation.
+        static string sGameLoopState = ""; /* Valid gamestates listed below:
         "" = no game state
         "Menu" = player is at main menu
         "ChooseDungeon" = player is choosing dungeon
         "ChooseRoom" = player is choosing a room in a dungeon
         */
+        static int iCampaignProgress = 0; // This holds the value of the dungeon iteration that the player is currently at
         static List<Dungeon> dDungeonList = new List<Dungeon>(); // Master Dungeon list, used across multiple gameplay methods
         static void Main(string[] args)
         {
             // Loads game settings
             LoadSettings();
 
-            gameLoopState = "Menu"; // set game state
+            sGameLoopState = "Menu"; // set game state
 
             // Launch menu
             Print("Hello, Welcome to the Dragon Lair Remastered!\n1) Continue\n2) New Game\n3) Settings\n4) Quit Game", ConsoleColor.White, true);
@@ -186,8 +187,9 @@ namespace TheDragonLairRemastered
             GameData? load = SaveSystem.LoadGame();
             if (load != null)
             {
-                difficulty = load.getDifficulty();
-                gameLoopState = load.getGameLoopState();
+                iDifficulty = load.getDifficulty();
+                iCampaignProgress = load.getCampaignProgress();
+                sGameLoopState = load.getGameLoopState();
                 dDungeonList = load.getDungeons();
 
                 DebugPrint("Load game operation successful", ConsoleColor.Gray, false);
@@ -200,7 +202,7 @@ namespace TheDragonLairRemastered
 
         public static void SaveGame()
         {
-            SaveSystem.SaveGame(new GameData(gameLoopState, difficulty, dDungeonList));
+            SaveSystem.SaveGame(new GameData(sGameLoopState, iDifficulty, iCampaignProgress, dDungeonList));
             DebugPrint("Game Saved", ConsoleColor.Gray, false);
         }
 
@@ -218,10 +220,11 @@ namespace TheDragonLairRemastered
 
                 LoadGame();
 
-                switch (gameLoopState)
+                switch (sGameLoopState)
                 {
-                    case "ChooseDungeon":
+                    case "ChooseDungeon": // Finish old loop
                     EnterDungeon(ChooseDungeon());
+                    iCampaignProgress++;
                     break;
                     default:
                     DebugPrint("Invalid game state", ConsoleColor.Gray, false);
@@ -234,29 +237,41 @@ namespace TheDragonLairRemastered
                 switch (readUserNum())
                 { // User can choose game difficulty. Most settings will be hidden until unlocked. Difficulty affects Dungeon RNG
                     case 1: Print("You picked Coward!", ConsoleColor.Green);
-                    difficulty = 1;
+                    iDifficulty = 1;
                     break;
                     case 2: Print("You picked Stalwart!", ConsoleColor.Green);
-                    difficulty = 2;
+                    iDifficulty = 2;
                     break;
                     case 3: Print("You picked Honor!", ConsoleColor.Green);
-                    difficulty = 3;
+                    iDifficulty = 3;
                     break;
                     default: Print("Invalid Response", ConsoleColor.Red);
                     CreateGame(bLoadGame); // Loops on fail
                     break;
                 }
-
-                // The following is the Core Gameplay loop:
                 CreateCharacter(); // Character Creation, runs once.
-                GenerateDungeons(10); // Generate Dungeons will create a set of 2-4 dungeons and prompt the player to choose one.
-                                      // After choosing, the selected dungeon is passed to the Enter Dungeon method, which loops through rooms until the dungeon is empty.
-                                      // Once the dungeon is completed, Generate Dungeons will recursively loop in this manner until the passed int value is depleted.
-                                      // Default value is 10, will be affected by the difficulty variable
-                Print("You have advanced to the final dungeon!"); // After completing the 10 dungeons, the player moves on to the final dungeon
-                // EnterDungeon("The Dragon's Lair"); // As there is only one variation of this dungeon, Generate Dungeons can be skipped.
-                Victory(); // Runs victory sequence and closes the game.
             }
+                // The following is the Core Gameplay loop:
+            // Generate Dungeons will create a set of 2-4 dungeons and prompt the player to choose one.
+            // After choosing, the selected dungeon is passed to the Enter Dungeon method, which loops through rooms until the dungeon is empty.
+            // Once the dungeon is completed, Generate Dungeons will recursively loop in this manner until the passed int value is depleted.
+            // Default value is 10, will be affected by the difficulty variable
+            while (iCampaignProgress < 10)
+            {
+                DebugPrint("Campaign Progress " + iCampaignProgress, ConsoleColor.Gray, true);    
+                if(dDungeonList.Count == 0)
+                {
+                    DebugPrint("Dungeon List empty, generating new...", ConsoleColor.Gray, false);
+                    GenerateDungeons(); 
+                }
+                // Runs a choice block to determine which of the above dungeons to enter, then passes the result to the Enter Dungeon loop
+                EnterDungeon(ChooseDungeon());
+                iCampaignProgress++;
+            }
+
+            Print("You have advanced to the final dungeon!"); // After completing the 10 dungeons, the player moves on to the final dungeon
+            EnterDungeon(new Dungeon("The Dragon's Lair", new string[]{"Boss Room"})); // As there is only one variation of this dungeon, Generate Dungeons can be skipped.
+            Victory(); // Runs victory sequence and closes the game.
         }
         
         public static void CreateCharacter() // Character creation menu
@@ -277,22 +292,12 @@ namespace TheDragonLairRemastered
                 break;
             }
         }
-        public static void GenerateDungeons(int iDunCount) // Dungeon Generator
-        {
-            int iCount = iDunCount; // Updates count value
-            if (iCount > 0) // Checks if count is still valid
-            {  
-                DebugPrint("Generating " + iDunCount + " Dungeon", ConsoleColor.Gray, false);
-                // Create a fresh list of dungeons
-                for(int j = 0; j <= GetRandom(1,4); j++)
-                {   
-                    dDungeonList.Add(new Dungeon("Dungeon #" + (j+1), generateRooms()));
-                }
-                
-                
-                // Runs a choice block to determine which of the above dungeons to enter, then passes the result to the Enter Dungeon loop
-                EnterDungeon(ChooseDungeon());
-                GenerateDungeons(iCount--); // Recursive loop.
+        public static void GenerateDungeons() // Dungeon Generator
+        {  
+            // Create a fresh list of dungeons
+            for(int j = 0; j <= GetRandom(1,4); j++)
+            {   
+                dDungeonList.Add(new Dungeon("Dungeon #" + (j+1), generateRooms()));
             }
         }
         public static string[] generateRooms()
@@ -301,7 +306,7 @@ namespace TheDragonLairRemastered
         }
         public static Dungeon ChooseDungeon() // Dungeon Selection Menu
         {
-            gameLoopState = "ChooseDungeon";
+            sGameLoopState = "ChooseDungeon";
             DebugPrint("Saving Game...", ConsoleColor.Gray, false);
             SaveGame();
 
