@@ -16,21 +16,24 @@ namespace TheDragonLairRemastered
         public int iDifficulty { get; set; } = 0;
         [JsonPropertyName("campaign_progress")]
         public int iCampaignProgress { get; set; } = 0;
+        [JsonPropertyName("player_character")]
+        public PlayerCharacter pPlayer {get; set;} = new PlayerCharacter("",0,"",new("",new string[]{}));
         [JsonPropertyName("dungeon_list")]
         public List<Dungeon> dDungeons { get; set; } = new();
-        // public PlayerCharacter Player { get; set; } = new();
 
-        public GameData(string sGameLoopState, int iDifficulty, int iCampaignProgress, List<Dungeon> dDungeons)
+        public GameData(string sGameLoopState, int iDifficulty, int iCampaignProgress, List<Dungeon> dDungeons, PlayerCharacter pPlayer)
         {
             SaveTime = DateTime.Now;
             this.sGameLoopState = sGameLoopState;
             this.iDifficulty = iDifficulty;
             this.iCampaignProgress = iCampaignProgress;
             this.dDungeons = dDungeons;
+            this.pPlayer = pPlayer;
         }
         public int getDifficulty(){ return iDifficulty; }
         public int getCampaignProgress(){ return iCampaignProgress; }
         public string getGameLoopState(){ return sGameLoopState;}
         public List<Dungeon> getDungeons(){ return dDungeons;}
+        public PlayerCharacter getPlayerCharacter(){ return pPlayer;}
     }
 }
