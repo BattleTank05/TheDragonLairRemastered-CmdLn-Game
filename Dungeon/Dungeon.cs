@@ -11,6 +11,12 @@ namespace TheDragonLairRemastered
         [JsonPropertyName("dungeon_rooms")]
         public string[] rooms {get; set;} = { "", "","", ""};
 
+        public Dungeon(string name)
+        {
+            this.name = name;
+
+            // rooms = generateRooms();
+        }
         public Dungeon(string name, string[] rooms) {
             this.name = name;
             this.rooms = rooms;

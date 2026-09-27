@@ -18,9 +18,10 @@
         "character_creation" = player is at character creation menu
         "choose_dungeon" = player is choosing dungeon
         "choose_room" = player is choosing a room in a dungeon
+        "encounter" = player is in an encounter
         */
         static int iCampaignProgress = 0; // This holds the value of the dungeon iteration that the player is currently at
-        static List<Dungeon> dDungeonList = new List<Dungeon>(); // Master Dungeon list, used across multiple gameplay methods
+        static Queue<List<Dungeon>> dDungeonList = new Queue<List<Dungeon>>(); // Master Dungeon list, used across multiple gameplay methods
         static PlayerCharacter pPlayer = new PlayerCharacter("",1,"",new("",new string[]{})); // Object which holds all player related attributes
         static void Main(string[] args)
         {
@@ -33,7 +34,7 @@
             // Launch menu
             DisplayPretext();
             Print("1) Continue\n2) New Game\n3) Settings\n4) Quit Game");
-            DebugPrint("Debug Mode enabled.", ConsoleColor.Gray);
+            DebugPrint("Debug Mode enabled.");
             switch (readUserNum())
             {
                 case 0:
@@ -107,7 +108,7 @@
                     break;
             }
         }
-        public static void DebugPrint(string sMsg, ConsoleColor cColor)
+        public static void DebugPrint(string sMsg, ConsoleColor cColor = ConsoleColor.Gray)
         {
             if (bIsDebugMode)
                 Print(sMsg, cColor);
@@ -231,7 +232,7 @@
         }
         static void LoadSettings()
         {
-            SettingsData? load = SaveSystem.LoadSettings();
+            SettingsData? load = DataSystem.LoadSettings();
             if (load != null)
             {
                 bEnableSingleKeyPress = load.bEnableSingleKeyPress;
@@ -245,13 +246,14 @@
         }
         static void SaveSettings()
         {
-            SaveSystem.SaveSettings(new SettingsData(bEnableSingleKeyPress));
+            DataSystem.SaveSettings(new SettingsData(bEnableSingleKeyPress));
             DebugPrint("Settings Saved", ConsoleColor.Gray);
         }
 
         static void LoadGame()
         {
-            GameData? load = SaveSystem.LoadGame();
+            DebugPrint("Loading Game Data...");
+            GameData? load = DataSystem.LoadGame();
             if (load != null)
             {
                 iDifficulty = load.getDifficulty();
@@ -260,17 +262,19 @@
                 dDungeonList = load.getDungeons();
                 pPlayer = load.getPlayerCharacter();
 
-                DebugPrint("Load game operation successful", ConsoleColor.Gray);
+                DebugPrint("Load game operation successful");
             }
             else
             {
-                DebugPrint("ERROR - Load game operation returned null", ConsoleColor.Gray);
+                DebugPrint("ERROR - Load game operation returned null");
             }
+            DebugPrint("Loading Successful");
         }
 
         public static void SaveGame()
         {
-            SaveSystem.SaveGame(new GameData(sGameLoopState, iDifficulty, iCampaignProgress, dDungeonList, pPlayer));
+            DebugPrint("Saving Game...");
+            DataSystem.SaveGame(new GameData(sGameLoopState, iDifficulty, iCampaignProgress, dDungeonList, pPlayer));
             DebugPrint("Game Saved", ConsoleColor.Gray);
         }
 
@@ -284,7 +288,6 @@
         {
             if (bLoadGame) // Launches loading sequence
             {
-                DebugPrint("Loading previous game data...", ConsoleColor.Gray);
                 LoadGame();
 
                 switch (sGameLoopState)
@@ -297,7 +300,7 @@
                         EnterDungeon(pPlayer.getCurrentDungeon());
                         break;
                     default:
-                        DebugPrint("Invalid game state", ConsoleColor.Gray);
+                        DebugPrint("Invalid game state");
                         break;
                 }
             }
@@ -305,7 +308,7 @@
             { // Standard new game
                 sGameLoopState = "new_game_menu";
                 DisplayPretext();
-                Print("Choose game difficulty:\n1) Coward (Easy)\n2) Stalwart (Normal)\n3) Honor (Hard)", ConsoleColor.White);
+                Print("Choose game difficulty:\n1) Coward (Easy)\n2) Stalwart (Normal)\n3) Honor (Hard)");
                 switch (readUserNum())
                 { // User can choose game difficulty. Most settings will be hidden until unlocked. Difficulty affects Dungeon RNG
                     case 1: Print("You picked Coward!", ConsoleColor.Green);
@@ -322,26 +325,25 @@
                     break;
                 }
                 CreateCharacter(); // Character Creation, runs once.
+                GenerateDungeons();
+                SaveGame();
             }
+                
                 // The following is the Core Gameplay loop:
             // Generate Dungeons will create a set of 2-4 dungeons and prompt the player to choose one.
             // After choosing, the selected dungeon is passed to the Enter Dungeon method, which loops through rooms until the dungeon is empty.
             // Once the dungeon is completed, Generate Dungeons will recursively loop in this manner until the passed int value is depleted.
             // Default value is 10, will be affected by the difficulty variable
-            DebugPrint("Saving Game...", ConsoleColor.Gray);
-            SaveGame();
+
             while (iCampaignProgress < 10)
             {
-                
-                DebugPrint("Campaign Progress " + iCampaignProgress, ConsoleColor.Gray);    
-                if(dDungeonList.Count == 0)
-                {
-                    DebugPrint("Dungeon List empty, generating new...", ConsoleColor.Gray);
-                    GenerateDungeons(); 
-                }
                 iCampaignProgress++;
+                DebugPrint("Campaign Progress " + iCampaignProgress);
+                
+                if(bIsDebugMode)
+                    Stall(); // Halt the program so user can read Debug Messages before the Console is cleared
+
                 EnterDungeon(ChooseDungeon());
-                DebugPrint("Saving Game...", ConsoleColor.Gray);
                 SaveGame();
             }
 
@@ -381,31 +383,38 @@
                 pPlayer.setName(readUserMsg());
             }
         }
-        public static void GenerateDungeons() // Dungeon Generator
+        public static void GenerateDungeons() // Generates all dungeons for the entire run
         {  
-            // Create a fresh list of dungeons
-            for(int j = 0; j <= GetRandom(1,4); j++)
-            {   
-                dDungeonList.Add(new Dungeon("Dungeon #" + (j+1), generateRooms()));
+            DebugPrint("Generating Dungeons...");
+            // Load relevant libraries:
+            List<string> availableNames = DataSystem.loadDungeonNames();
+
+            // Create a series of 10 dungeon lists
+            for(int i = 0; i < 10; i++)
+            {
+                List<Dungeon> dList = new List<Dungeon>();    
+                for(int j = 0; j <= GetRandom(1,4); j++) // This will create between 2-4 dungeons for each list
+                {   
+                    int nameIndex = GetRandom(0,availableNames.Count); // Pull a random name from the available names pool
+                    dList.Add(new Dungeon(availableNames[nameIndex])); // Add new dungeon to the list
+                    availableNames.Remove(availableNames[nameIndex]); // Remove the name to ensure there are no duplicates
+                }
+                dDungeonList.Enqueue(dList);
             }
-        }
-        public static string[] generateRooms()
-        {
-            return new string[] {"Room1","Room2","Room3","Room4","Room5"}; // Barebone implementation
+            DebugPrint("Dungeon Generation Complete");
         }
         public static Dungeon ChooseDungeon() // Dungeon Selection Menu
         {
             sGameLoopState = "choose_dungeon";
             DisplayPretext();
             
-            DebugPrint("Saving Game...", ConsoleColor.Gray);
             SaveGame();
 
             Print("Choose a dungeon to enter:");
-            for (int i = 0; i < dDungeonList.Count(); i++)
+            for (int i = 0; i < dDungeonList.First().Count(); i++)
             { // Prints the list of dungeons and their descriptions
-                if (dDungeonList[i].getName() != "")
-                    Print((i+1) + ") " + dDungeonList[i].getName());
+                if (dDungeonList.First()[i].getName() != "")
+                    Print((i+1) + ") " + dDungeonList.First()[i].getName());
             }
             switch (readUserNum())
             { // Simple choice block
@@ -413,19 +422,19 @@
                 return ChooseDungeon(); 
                 case 1: 
                     if (dDungeonList.Count() > 0)
-                        if(confirmAction("travel to " + dDungeonList[0].getName()))
+                        if(confirmAction("travel to " + dDungeonList.First()[0].getName()))
                         {
-                            pPlayer.setDungeon(dDungeonList[0]);
-                            return dDungeonList[0];
+                            pPlayer.setDungeon(dDungeonList.First()[0]);
+                            return dDungeonList.First()[0];
                         }
                 return ChooseDungeon();
                 case 2: 
                     if (dDungeonList.Count() > 1)
                     {
-                        if(confirmAction("travel to " + dDungeonList[1].getName()))
+                        if(confirmAction("travel to " + dDungeonList.First()[1].getName()))
                         {
-                            pPlayer.setDungeon(dDungeonList[1]);
-                            return dDungeonList[1];
+                            pPlayer.setDungeon(dDungeonList.First()[1]);
+                            return dDungeonList.First()[1];
                         }
                         else
                         return ChooseDungeon();
@@ -439,10 +448,10 @@
                 case 3: 
                     if (dDungeonList.Count() > 2)
                     {
-                        if(confirmAction("travel to " + dDungeonList[2].getName()))
+                        if(confirmAction("travel to " + dDungeonList.First()[2].getName()))
                         {
-                            pPlayer.setDungeon(dDungeonList[2]);
-                            return dDungeonList[2];
+                            pPlayer.setDungeon(dDungeonList.First()[2]);
+                            return dDungeonList.First()[2];
                         }
                         else
                         return ChooseDungeon();
@@ -456,10 +465,10 @@
                 case 4: 
                     if (dDungeonList.Count() > 3)
                     {
-                        if(confirmAction("travel to " + dDungeonList[3].getName()))
+                        if(confirmAction("travel to " + dDungeonList.First()[3].getName()))
                         {
-                            pPlayer.setDungeon(dDungeonList[3]);
-                            return dDungeonList[3];
+                            pPlayer.setDungeon(dDungeonList.First()[3]);
+                            return dDungeonList.First()[3];
                         }
                         else
                         return ChooseDungeon();
@@ -482,7 +491,7 @@
             DisplayPretext();
 
             Print("Entering " + dungeon.getName() + "..."); // loop init
-            dDungeonList.Clear(); // Clear the dungeon list after entering a dungeon
+            dDungeonList.Dequeue(); // Remove the beginning entry
             SaveGame();
             
             Stall();
@@ -500,15 +509,11 @@
         public static void Victory() // Victory Screen
         {
             Print("Congratulations! You have defeated the Dragon and completed the game!");
-            Print("Press any key to exit...");
-            Console.ReadKey();
             Exit(0);
         }
         public static void Defeat() // Defeat Screen
         {
             Print("You have been defeated! Better luck next time!");
-            Print("Press any key to exit...");
-            Console.ReadKey();
             Exit(0);
         }
 #endregion
