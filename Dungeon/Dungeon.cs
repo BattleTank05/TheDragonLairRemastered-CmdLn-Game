@@ -9,20 +9,14 @@ namespace TheDragonLairRemastered
         public string name {get; set;} = "";
 
         [JsonPropertyName("dungeon_rooms")]
-        public string[] rooms {get; set;} = { "", "","", ""};
+        public Dictionary<int,string> rooms {get; set;} = new();
 
-        public Dungeon(string name)
-        {
-            this.name = name;
-
-            // rooms = generateRooms();
-        }
-        public Dungeon(string name, string[] rooms) {
+        public Dungeon(string name, Dictionary<int,string> rooms) {
             this.name = name;
             this.rooms = rooms;
         }
 
         public string getName() { return name; }
-        public string[] getRooms() { return rooms; }
+        public Dictionary<int,string> getRooms() { return rooms; }
     }
 }

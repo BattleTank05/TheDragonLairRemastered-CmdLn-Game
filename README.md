@@ -33,6 +33,7 @@ Like DnD, the max level the player can reach is 20. The final dungeon will be de
 If the player takes the minimum possible risk, they should still reach levels 14 or 15 by the final dungeon.
 
 After completing a dungeon, the player will go to town. Here, they can trade their loot for valuable gear and supplies. Some NPCs and Quests may involve town.
+ Or perhaps, towns are inserted into the dungeon lists, so sometimes after completing a dungeon the player will be able to go to town.
 
 Upon defeating the Dragon's Lair, the player wins and the game will end.</br>
 After winning, the next level of difficulty will be unlocked.</br>

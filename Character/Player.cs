@@ -12,7 +12,7 @@ namespace TheDragonLairRemastered
         public string sClass {get; set;} = "";
 
         [JsonPropertyName("current_dungeon")]
-        public Dungeon currentDungeon {get; set;} = new("",new string[]{});
+        public Dungeon currentDungeon {get; set;} = new("",new());
 
         public PlayerCharacter(string sName, int iLevel, string sClass, Dungeon currentDungeon)
         {

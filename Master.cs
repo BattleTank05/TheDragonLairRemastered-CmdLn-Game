@@ -4,32 +4,40 @@
     {
         public static string versionID = "v0.1";
         static bool bIsDebugMode = false; // Switch that toggles printing debug logs to the console
-        
-        // Global settings variables
         static bool bEnableSingleKeyPress = true; // Toggles whether user input is read as single key presses or full lines. Default is true.
         
-        // Game settings variables
-        static int iDifficulty = 0; // 1 = Easy, 2 = Normal, 3 = Hard | Affects the RNG during dungeon creation.
-        static string sGameLoopState = ""; /* Valid gamestates listed below:
-        "" = no game state
-        "main_menu" = player is at main menu
-        "settings_menu" = player is at settings menu
-        "new_game_menu" = player is at new game creation menu
-        "character_creation" = player is at character creation menu
-        "choose_dungeon" = player is choosing dungeon
-        "choose_room" = player is choosing a room in a dungeon
-        "encounter" = player is in an encounter
-        */
+        static Difficulty gameDifficulty = Difficulty.None;
+        public enum Difficulty
+        {
+            None, // Default value. Should never be used for math.
+            Coward, // 1 = Easy
+            Stalwart, // 2 = Normal
+            Valor // 3 = Hard
+        }
+        
+        static GameState gameLoopState = GameState.None;
+        public enum GameState
+        {
+            None,                // no game state
+            MainMenu,            // player is at main menu
+            SettingsMenu,        // player is at settings menu
+            NewGameMenu,         // player is at new game creation menu
+            CharacterCreation,   // player is at character creation menu
+            ChooseDungeon,       // player is choosing dungeon
+            ChooseRoom,          // player is choosing a room in a dungeon
+            Encounter            // player is in an encounter
+        }
+
         static int iCampaignProgress = 0; // This holds the value of the dungeon iteration that the player is currently at
         static Queue<List<Dungeon>> dDungeonList = new Queue<List<Dungeon>>(); // Master Dungeon list, used across multiple gameplay methods
-        static PlayerCharacter pPlayer = new PlayerCharacter("",1,"",new("",new string[]{})); // Object which holds all player related attributes
+        static PlayerCharacter pPlayer = new PlayerCharacter("",1,"",new("",new())); // Object which holds all player related attributes
         static void Main(string[] args)
         {
             // Loads game settings
             LoadSettings();
 
             // set game state
-            sGameLoopState = "main_menu";
+            gameLoopState = GameState.MainMenu;
 
             // Launch menu
             DisplayPretext();
@@ -42,8 +50,10 @@
                     bIsDebugMode = !bIsDebugMode;
                 Main(args);
                 break;
-                case 1: Print("You picked Continue!", ConsoleColor.Cyan);
-                CreateGame(true); // Creates a new game instance in Load mode
+                case 1:
+                if(confirmAction("continue last saved game"))
+                    CreateGame(true); // Creates a new game instance in Load mode
+                Main(args);
                 break;
                 case 2:
                 if (bIsDebugMode)
@@ -69,49 +79,34 @@
         <<<--- UTILITY METHODS --->>>
         */
 #region Utility Methods
-        public static void Print(string sMsg) // Prints given message to the terminal. Uses \n at start for clarity
-        {
-            Console.WriteLine("\n" + sMsg);
-        }
-        public static void Print(string sMsg, ConsoleColor cColor) // Same as regular print, but can set a custom color. Reverts to back to white after writing the message
+        public static void Print(string sMsg, ConsoleColor cColor = ConsoleColor.White) // Same as regular print, but can set a custom color. Reverts to back to white after writing the message
         {
             Console.ForegroundColor = cColor;
-            Print(sMsg);
-            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("\n" + sMsg);
+        }
+        public static void DebugPrint(string sMsg, ConsoleColor cColor = ConsoleColor.Gray)
+        {
+            if (bIsDebugMode)
+                Print(sMsg, cColor);
         }
         public static void DisplayPretext() // Clears the Console and prints relevant information as pretext based on the current game state
         {
             Console.Clear();
             Print("The Dragon Lair Remastered " + versionID + "\n", ConsoleColor.Gray);
             
-            switch (sGameLoopState)
+            string displayTitle = gameLoopState switch
             {
-                case "main_menu":
-                    Print("    The Dragon Lair Remastered Main Menu", ConsoleColor.DarkYellow);
-                    break;
-                case "settings_menu":
-                    Print("   Settings Menu", ConsoleColor.DarkYellow);
-                    break;
-                case "new_game_menu":
-                Print("  New Game Menu", ConsoleColor.DarkYellow);
-                    break;
-                case "character_creation":
-                Print("  Character Creation Menu", ConsoleColor.DarkYellow);
-                    break;
-                case "choose_dungeon":
-                Print("  Choosing Dungeon | Game Progress: " + iCampaignProgress, ConsoleColor.Yellow);
-                Print("   " + pPlayer.getInfo(), ConsoleColor.Blue);
-                    break;
-                case "choose_room":
-                Print("  Exploring " + pPlayer.getCurrentDungeon().getName(), ConsoleColor.Yellow);
-                Print("   " + pPlayer.getInfo(), ConsoleColor.Blue);
-                    break;
-            }
-        }
-        public static void DebugPrint(string sMsg, ConsoleColor cColor = ConsoleColor.Gray)
-        {
-            if (bIsDebugMode)
-                Print(sMsg, cColor);
+                GameState.MainMenu          => "=== MAIN MENU ===",
+                GameState.SettingsMenu      => "=== SETTINGS ===",
+                GameState.NewGameMenu       => "=== START NEW ADVENTURE ===",
+                GameState.CharacterCreation => "=== HERO CREATION ===",
+                GameState.ChooseDungeon     => "=== SELECT A DUNGEON | CAMPAIGN PROGRESS: " + iCampaignProgress + "/10 ===" + "\n   " + pPlayer.getInfo(),
+                GameState.ChooseRoom        => "=== CHOOSE YOUR PATH | " + pPlayer.getCurrentDungeon().getName() + " ===" + "\n   " + pPlayer.getInfo(),
+                GameState.Encounter         => "=== ENCOUNTER ===",
+                _                           => "Loading..."
+            };
+
+            Print(displayTitle, ConsoleColor.Yellow);
         }
         public static void Stall()
         {
@@ -138,7 +133,7 @@
             // Check again for empty string
             if (string.IsNullOrWhiteSpace(cleaned))
             {
-                Print("Please enter valid characters", ConsoleColor.Red);
+                Print("Please enter valid characters.", ConsoleColor.Red);
                 return readUserMsg();
             }
             return cleaned;
@@ -256,9 +251,16 @@
             GameData? load = DataSystem.LoadGame();
             if (load != null)
             {
-                iDifficulty = load.getDifficulty();
+                gameDifficulty = (Difficulty)load.getDifficulty();
+                if (Enum.TryParse(load.getGameLoopState(), out GameState loadedState))
+                {
+                    gameLoopState = loadedState;
+                }
+                else
+                {
+                    gameLoopState = GameState.None;
+                }
                 iCampaignProgress = load.getCampaignProgress();
-                sGameLoopState = load.getGameLoopState();
                 dDungeonList = load.getDungeons();
                 pPlayer = load.getPlayerCharacter();
 
@@ -274,7 +276,7 @@
         public static void SaveGame()
         {
             DebugPrint("Saving Game...");
-            DataSystem.SaveGame(new GameData(sGameLoopState, iDifficulty, iCampaignProgress, dDungeonList, pPlayer));
+            DataSystem.SaveGame(new GameData(gameLoopState.ToString(), (int)gameDifficulty, iCampaignProgress, dDungeonList, pPlayer));
             DebugPrint("Game Saved", ConsoleColor.Gray);
         }
 
@@ -290,13 +292,12 @@
             {
                 LoadGame();
 
-                switch (sGameLoopState)
+                switch (gameLoopState)
                 {
-                    case "choose_dungeon": // Finish old loop
+                    case GameState.ChooseDungeon: // Finish old loop
                         EnterDungeon(ChooseDungeon());
-                        iCampaignProgress++;
                         break;
-                    case "choose_room":
+                    case GameState.ChooseRoom:
                         EnterDungeon(pPlayer.getCurrentDungeon());
                         break;
                     default:
@@ -306,19 +307,19 @@
             }
             else
             { // Standard new game
-                sGameLoopState = "new_game_menu";
+                gameLoopState = GameState.NewGameMenu;
                 DisplayPretext();
                 Print("Choose game difficulty:\n1) Coward (Easy)\n2) Stalwart (Normal)\n3) Honor (Hard)");
                 switch (readUserNum())
                 { // User can choose game difficulty. Most settings will be hidden until unlocked. Difficulty affects Dungeon RNG
                     case 1: Print("You picked Coward!", ConsoleColor.Green);
-                    iDifficulty = 1;
+                    gameDifficulty = Difficulty.Coward;
                     break;
                     case 2: Print("You picked Stalwart!", ConsoleColor.Green);
-                    iDifficulty = 2;
+                    gameDifficulty = Difficulty.Stalwart;
                     break;
                     case 3: Print("You picked Honor!", ConsoleColor.Green);
-                    iDifficulty = 3;
+                    gameDifficulty = Difficulty.Valor;
                     break;
                     default: Print("Invalid Response", ConsoleColor.Red);
                     CreateGame(bLoadGame); // Loops on fail
@@ -330,35 +331,29 @@
             }
                 
                 // The following is the Core Gameplay loop:
-            // Generate Dungeons will create a set of 2-4 dungeons and prompt the player to choose one.
-            // After choosing, the selected dungeon is passed to the Enter Dungeon method, which loops through rooms until the dungeon is empty.
-            // Once the dungeon is completed, Generate Dungeons will recursively loop in this manner until the passed int value is depleted.
-            // Default value is 10, will be affected by the difficulty variable
-
-            while (iCampaignProgress < 10)
+            while (iCampaignProgress < 10) // By default, this loop should only run 10 times
             {
-                iCampaignProgress++;
+                iCampaignProgress++; // Increment dungeon progress
                 DebugPrint("Campaign Progress " + iCampaignProgress);
                 
                 if(bIsDebugMode)
-                    Stall(); // Halt the program so user can read Debug Messages before the Console is cleared
+                    Stall(); // Halt the program so dev can read Debug Messages before the Console is cleared
 
                 EnterDungeon(ChooseDungeon());
                 SaveGame();
             }
 
             Print("You have advanced to the final dungeon!"); // After completing the 10 dungeons, the player moves on to the final dungeon
-            EnterDungeon(new Dungeon("The Dragon's Lair", new string[]{"Boss Room"})); // As there is only one variation of this dungeon, Generate Dungeons can be skipped.
+            EnterDungeon(new Dungeon("The Dragon's Lair",generateRooms())); // As there is only one variation of this dungeon, Generate Dungeons can be skipped.
             Victory(); // Runs victory sequence and closes the game.
         }
         
         public static void CreateCharacter() // Character creation menu
         {
-            sGameLoopState = "character_creation";
+            gameLoopState = GameState.CharacterCreation;
             DisplayPretext();
             Print("Pick a starting class:\n1) Warrior\n2) Mage\n3) Rogue");
-            // Each of the following options will instantiate a new player.
-            // The given class value determines the stats, gear, and abilities the new character will have.
+            // The class value determines the stats, gear, and abilities the new character will have.
             switch (readUserNum())
             { // Simple choice block
                 case 1: Print("You picked Warrior!", ConsoleColor.Green);
@@ -396,16 +391,27 @@
                 for(int j = 0; j <= GetRandom(1,4); j++) // This will create between 2-4 dungeons for each list
                 {   
                     int nameIndex = GetRandom(0,availableNames.Count); // Pull a random name from the available names pool
-                    dList.Add(new Dungeon(availableNames[nameIndex])); // Add new dungeon to the list
+                    dList.Add(new Dungeon(availableNames[nameIndex], generateRooms())); // Add new dungeon to the list
                     availableNames.Remove(availableNames[nameIndex]); // Remove the name to ensure there are no duplicates
                 }
                 dDungeonList.Enqueue(dList);
             }
             DebugPrint("Dungeon Generation Complete");
         }
+        public static Dictionary<int,string> generateRooms()
+        {
+            int numRooms = GetRandom(5,8);
+            Dictionary<int,string> rooms = new();
+            for (int i = 0; i <= numRooms; i++)
+            {
+                rooms.Add(i, "Room " + (i+1));
+            }
+            
+            return rooms;
+        }
         public static Dungeon ChooseDungeon() // Dungeon Selection Menu
         {
-            sGameLoopState = "choose_dungeon";
+            gameLoopState = GameState.ChooseDungeon;
             DisplayPretext();
             
             SaveGame();
@@ -487,7 +493,7 @@
         }
         public static void EnterDungeon(Dungeon dungeon) // Dungeon Gameplay Loop
         {
-            sGameLoopState = "choose_room";
+            gameLoopState = GameState.ChooseRoom;
             DisplayPretext();
 
             Print("Entering " + dungeon.getName() + "..."); // loop init
@@ -495,9 +501,9 @@
             SaveGame();
             
             Stall();
-            foreach(string Room in dungeon.getRooms())
+            for(int i = 0; i < dungeon.getRooms().Count; i++)
             {
-                EnterRoom(Room);   
+                EnterRoom(dungeon.getRooms()[i]);
             }
             Print("You have cleared the Dungeon!"); // End of loop
         }
